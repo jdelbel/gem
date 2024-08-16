@@ -1,0 +1,11 @@
+﻿type,measurment,ntu_1,ntu_2,ntu_3
+plastic,10 NTU,10.39,10.34,10.14
+plastic,100 NTU,99.43,99.31,99.21
+plastic,Southgate Bridge,44.81,44.5,44.38
+plastic,Elliot Creek,14.04,14.56,14.75
+plastic,Southgate Downstream,37.86,37.96,37.42
+glass,10 NTU,9.805,9.449,9.667
+glass,100 NTU,101.8,101.9,102
+glass,Southgate Bridge,51.16,51.04,51.11
+glass,Elliot Creek,14.29,13.84,13.04
+glass,Southgate Downstream,40.13,41.07,42.3

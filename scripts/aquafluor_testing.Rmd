@@ -1,0 +1,422 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+ 
+
+```{r}
+library(tidyverse)
+library(here)
+library(patchwork)
+library(readxl)
+library(ggpmisc)
+library(pals)
+library(scales)
+```
+
+```{r}
+
+#Upload chl dataset - entire QU39 dataset downloaded from the portal on 2022-10-12
+s <- read_csv(here("files", "aqua_standards.csv"))
+
+st <- read_csv(here("files", "aqua_standards_turb.csv"))
+
+fs <- read_csv(here("files", "field_surf_compare.csv"))
+
+fd <- read_csv(here("files", "Aquafluor_field_results_turb_2.csv"))
+
+c <- read_csv(here("files", "8_binAvg-1723757572399.csv"))
+
+gp <- read_csv(here("files", "glass_plastic.csv"))
+
+```
+```{r}
+c <- c %>% 
+  select(depth = `Pressure (dbar)`, castpk = `Cast PK`, flu = `Fluorometry Chlorophyll (ug/L)`,
+         turb = `Turbidity (FTU)`)
+```
+
+
+
+```{r}
+formula <- y~x-1
+
+  ggplot() +
+  geom_point(data = filter(s, type == "manual"),
+             aes(x = rfu, y = sample), pch = 21, fill = "#1e3579",
+             size = 5, alpha = 0.5, stroke = 0.1) +
+  geom_smooth(data = filter(s, type == "manual"),
+              aes(x = rfu, y = sample),
+              method = "lm", color = "#1e3579", fill = "#1e3579",
+              formula = y ~ x-1,
+              fullrange = TRUE, se = T, size = 2) +
+  stat_poly_eq(data = filter(s, type == "manual"),
+               aes(x = rfu, y = sample,
+               label = paste(expression(Cali[MANUAL]), "-", ..eq.label.., ..rr.label.., sep = "~~")),
+               formula = formula, parse = TRUE, size = 8,
+               color = "#1e3579") +
+  geom_point(data = filter(s, type == "auto"),
+             aes(x = rfu, y = sample), pch = 21, fill = "#ff8709",
+             size = 5, alpha = 0.5, stroke = 0.1) +
+  geom_smooth(data = filter(s, type == "auto"),
+              aes(x = rfu, y = sample),
+              method = "lm", color = "#ff8709", fill = "#ff8709",
+              formula = y ~ x-1,
+              fullrange = F, se = T, size = 2) +
+  stat_poly_eq(data = filter(s, type == "auto"),
+               aes(x = rfu, y = sample,
+               label = paste(expression(Cali[AUTO]), "-", ..eq.label..,
+                             ..rr.label.., sep = "~~")),
+               formula = formula, parse = TRUE, size = 8, label.y.npc = 0.87,
+               color = "#ff8709")  +
+  geom_point(data = filter(s, type == "standard"),
+             aes(x = rfu, y = sample, color = "Post-Cali Std."), pch = 8,
+             size = 2, stroke = 2) +
+  scale_color_manual(values = c("black")) +
+  labs(x = expression(RFU[AQUAFLUOR]),
+       y = expression(Chl[STD] ~ "(µg/L)"),
+       color = NULL) +
+  theme_bw() +
+  theme(text = element_text(size = 32),
+        axis.text = element_text(colour = "black"),
+        legend.position = c(0.75, 0.1)) 
+  
+ggsave(here("figures", "scatter_cali.png"),
+        width = 8, height = 6, dpi = 300)
+```
+
+```{r}
+#Make plot showing surface field comparison. Box plot showing triplicate of extracted and GEM?
+
+fs %>% 
+  pivot_longer(c(extracted, in_vivo), names_to = "type", values_to = "chla") %>% 
+  ggplot(aes(x = type, y = chla, fill = type)) +
+  geom_boxplot(alpha = 0.5, size = 1) +
+  ggpubr::stat_compare_means(method = "t.test", label.x = 0.65, label.y = 2.8,
+                             size = 9) +
+  geom_point(size = 5, pch = 21,
+             position = position_jitterdodge(jitter.width = 0)) +
+  ylim(0, 3) +
+  scale_x_discrete(breaks = c("extracted","in_vivo"),
+                   labels = c(expression(italic("In Vitro")[TRILOGY]),
+                              expression(italic("In Vivo")[AQUAFLUOR]))) +
+  labs(y = "Chla (µg/L)") +
+  ggsci::scale_fill_jco() +
+  theme_bw() +
+  theme(text = element_text(size = 32),
+        axis.text = element_text(colour = "black"),
+        axis.title.x = element_blank(),
+        legend.position = "none") 
+  
+ggsave(here("figures", "box_field_surf.png"),
+        width = 8, height = 6, dpi = 300)
+```
+
+```{r}
+#Order locations from fjord to shelf
+order <- c("field", "light", "lab")
+
+#Chemtax - Specify order of phyto groups for figures
+fd <- arrange(mutate(fd,
+                         type = factor(type, levels = order)))
+```
+
+
+```{r}
+#Make a plot showing field collection by depth with initial reading, lab reading and light affected reading and crazy variability between trips - boxplot?
+fd %>% 
+  ggplot(aes(x = chl, y = fct_rev(type), fill = type)) +
+  geom_boxplot(alpha = 0.2) +
+  geom_point(size = 5, pch = 21,
+             position = position_jitterdodge(jitter.width = 0)) +
+  facet_grid(depth ~ ., scales = "free_y") +
+  ggpubr::stat_compare_means(method = "anova") +      # Add global p-value
+  ggpubr::stat_compare_means(label = "p.signif", method = "t.test",
+                     ref.group = "0.5") +
+  labs(y = "",
+       x = "Chl (ug/L)",
+       fill = NULL) +
+  ggsci::scale_fill_jco() +
+  theme_bw() +
+  theme(text = element_text(size = 32),
+        axis.text = element_text(colour = "black"),
+        legend.position = "none",
+        legend.direction = "horizontal") 
+
+ggsave(here("figures", "box_field_depth_2.png"),
+        width = 10, height = 10, dpi = 300)
+```
+
+```{r}
+stat.test <- fd %>% 
+  filter(!type == "light") %>% 
+  group_by(depth) %>% 
+  rstatix::t_test(chl ~ type) %>% 
+  ungroup()
+
+stat.test <- stat.test %>% rstatix::add_xy_position(x = "type")
+
+```
+
+```{r}
+df <- fd
+df$dose <- as.factor(df$type)
+stat.test <- df %>%
+  filter(!type == "light") %>% 
+  group_by(depth) %>%
+  rstatix::t_test(chl ~ dose) %>% 
+  rstatix::adjust_pvalue() %>% 
+  rstatix::add_significance("p.adj") %>% 
+  ungroup()
+```
+
+```{r}
+# New facet label names for dose variable
+dep_labs <- c("1m", "5m", "8m")
+names(dep_labs) <- c("1", "5", "8")
+
+```
+
+
+```{r}
+bxp <- ggpubr::ggboxplot(df, x = "dose", y = "chl", fill = "dose",
+                         pch = 21,
+                         add = "dotplot",
+                 palette = c("#00AFBB", "#E7B800", "#FC4E07"),
+                 size = 1,
+                 alpha = 0.5) +
+  facet_grid(depth ~ ., scales = "free_y",
+             labeller = labeller(depth = dep_labs)) +
+  labs(y = expression("Chl"[AQUAFLUOR] ~ "(µg/L)"),
+       x = NULL)
+
+# Add pvalues
+stat.test <- stat.test %>% rstatix::add_y_position()
+
+bxp + 
+  ggpubr::stat_pvalue_manual(stat.test, label = "p.adj.signif",
+                             tip.length = 0.01,
+                             coord.flip = TRUE, 
+                             size = 8) +
+  coord_flip() +
+  theme_bw() +
+    theme(text = element_text(size = 32),
+        axis.text = element_text(colour = "black"),
+        legend.position = "none",
+        strip.background = element_rect(color = "black",
+                                        fill = "#9BC1BC",
+                                        size = 0.5,
+                                        linetype="solid")) 
+
+ggsave(here("figures", "box_field_depth_3.png"),
+        width = 10, height = 10, dpi = 300)
+```
+```{r}
+join <- df %>% 
+  filter(type == "field") %>% 
+  group_by(depth) %>% 
+  summarise(chl_avg = mean(chl),
+            sdev = sd(chl),
+            turb_ftu = mean(turb_ftu)) %>%
+  ungroup()
+
+c <- c %>% 
+  full_join(join)
+  
+```
+
+
+
+```{r}
+flu <- ggplot() +
+  geom_smooth(data = c, aes(x = flu, y = depth, fill = as.factor(castpk),
+                           color = as.factor(castpk)),
+              orientation = "y", method = "loess", se = F,
+              alpha = 0.4, size = 2) +
+  geom_point(data = c, aes(x = flu, y = depth),
+              alpha = 0.4, size = 2, fill = "white", pch = 21) +
+  geom_point(data = c, aes(x = chl_avg, y = depth, color = "AQUAFLUOR"),
+              pch = 8, size = 4, stroke = 1.5) +
+  scale_color_manual(values = c("#D00000", "#ffba08", "#3f88c5"),
+                     label = c(expression("CTD"[PRE]),
+                               expression("CTD"[POST]),
+                               "AQUAFLUOR")) +
+  labs(x = "Chl (µg/L)",
+       y = "Depth (m)") +
+  scale_y_reverse() +
+  ylim(10, 1) +
+  # ggtitle("Seasonal Profiles") +
+  theme_bw() +
+  theme(strip.background = element_blank(),
+        text = element_text(size = 35),
+        axis.text = element_text(colour = "black"),
+        legend.title = element_blank(),
+        panel.spacing = unit(3, "lines"),
+        legend.position = c(0.7, 0.89)) +
+  guides(fill = "none")
+
+turb <- ggplot() +
+  geom_smooth(data = c, aes(x = turb, y = depth, fill = as.factor(castpk),
+                           color = as.factor(castpk)),
+              orientation = "y", method = "loess", se = F,
+              alpha = 0.4, size = 2) +
+  geom_point(data = c, aes(x = turb, y = depth),
+              alpha = 0.4, size = 2, fill = "white", pch = 21) +
+  geom_point(data = c, aes(x = turb_ftu, y = depth, color = "AQUAFLUOR"),
+              pch = 8, size = 4, stroke = 1.5) +
+  scale_color_manual(values = c("#D00000", "#ffba08", "#3f88c5"),
+                     label = c(expression("CTD"[PRE]),
+                               expression("CTD"[POST]),
+                               "AQUAFLUOR")) +
+  labs(x = "Turbidity (FTU/NTU)",
+       y = "Depth (m)") +
+  scale_y_reverse() +
+  ylim(10, 1) +
+  # ggtitle("Seasonal Profiles") +
+  theme_bw() +
+  theme(strip.background = element_blank(),
+        text = element_text(size = 35),
+        axis.text = element_text(colour = "black"),
+        axis.text.y = element_blank(),
+        axis.title.y = element_blank(),
+        legend.title = element_blank(),
+        panel.spacing = unit(3, "lines"),
+        legend.position = "none") +
+  guides(fill = "none")
+
+
+  # geom_smooth(data = c, aes(x = turb, y = depth, fill = as.factor(castpk),
+  #                          color = as.factor(castpk)),
+  #             orientation = "y", method = "loess", se = F,
+  #             alpha = 0.4, size = 2, linetype = "dashed") +
+
+fig <- flu + turb
+
+ggsave(here("figures", "profiles.png"), fig,
+        width = 12, height = 10, dpi = 300)
+
+```
+
+
+
+
+
+```{r}
+f1 <- ggplot() +
+  geom_point(data = filter(st, type == "cali_glass"),
+             aes(x = rfu, y = std_ntu), pch = 21, fill = "#1e3579",
+             size = 5, alpha = 0.5, stroke = 0.5) +
+  geom_smooth(data = filter(st, type == "cali_glass"),
+              aes(x = rfu, y = std_ntu),
+              method = "lm", color = "#1e3579", fill = "#1e3579",
+              formula = y ~ x-1,
+              fullrange = TRUE, se = T, size = 2) +
+  stat_poly_eq(data = filter(st, type == "cali_glass"),
+               aes(x = rfu, y = std_ntu,
+               label = paste(expression(Cali[GLASS]), "-", ..eq.label.., ..rr.label.., sep = "~~")),
+               formula = formula, parse = TRUE, size = 8,
+               color = "#1e3579") +
+  geom_point(data = filter(st, type == "cali_plastic"),
+             aes(x = rfu, y = std_ntu), pch = 21, fill = "#ff8709",
+             size = 5, alpha = 0.5, stroke = 0.5) +
+  geom_smooth(data = filter(st, type == "cali_plastic"),
+              aes(x = rfu, y = std_ntu),
+              method = "lm", color = "#ff8709", fill = "#ff8709",
+              formula = y ~ x-1,
+              fullrange = F, se = T, size = 2) +
+  stat_poly_eq(data = filter(st, type == "cali_plastic"),
+               aes(x = rfu, y = std_ntu,
+               label = paste(expression(Cali[PLASTIC]), "-", ..eq.label..,
+                             ..rr.label.., sep = "~~")),
+               formula = formula, parse = TRUE, size = 8, label.y.npc = 0.87,
+               color = "#ff8709")  +
+  geom_point(data = filter(st, type == "s10_glass"),
+             aes(x = rfu, y = std_ntu, fill = "Post-Cali STD. (glass)"), pch = 8,
+             size = 1, stroke = 1.5, color = "#1e3579") +
+  geom_point(data = filter(st, type == "s100_glass"),
+             aes(x = rfu, y = std_ntu, fill = "Post-Cali STD. (glass)"), pch = 8,
+             size = 1, stroke = 1.5, color = "#1e3579") +
+  geom_point(data = filter(st, type == "s10_plastic"),
+             aes(x = rfu, y = std_ntu, fill = "Post-Cali STD. (plastic)"), pch = 8,
+             size = 1, stroke = 1.5, color = "#ff8709") +
+  geom_point(data = filter(st, type == "s100_plastic"),
+             aes(x = rfu, y = std_ntu, fill = "Post-Cali STD. (plastic)"), pch = 8,
+             size = 1, stroke = 1.5, color = "#ff8709") +
+  scale_color_manual(values = c("black")) +
+  labs(x = expression(RFU[AQUAFLUOR]),
+       y = expression(Turbidity[STD] ~ "(NTU)"),
+       color = NULL,
+       fill = NULL) +
+  theme_bw() +
+  theme(text = element_text(size = 32),
+        axis.text = element_text(colour = "black"),
+        legend.position = c(0.65, 0.1)) 
+
+f2 <- ggplot() +
+  geom_point(data = filter(st, type == "cali_glass"),
+             aes(x = rfu, y = std_ntu), pch = 21, fill = "#1e3579",
+             size = 5, alpha = 0.5, stroke = 0.1) +
+  geom_smooth(data = filter(st, type == "cali_glass"),
+              aes(x = rfu, y = std_ntu),
+              method = "lm", color = "#1e3579", fill = "#1e3579",
+              formula = y ~ x-1,
+              fullrange = T, se = T, size = 2) +
+  geom_point(data = filter(st, type == "cali_plastic"),
+             aes(x = rfu, y = std_ntu), pch = 21, fill = "#ff8709",
+             size = 5, alpha = 0.5, stroke = 0.1) +
+  geom_smooth(data = filter(st, type == "cali_plastic"),
+              aes(x = rfu, y = std_ntu),
+              method = "lm", color = "#ff8709", fill = "#ff8709",
+              formula = y ~ x-1,
+              fullrange = T, se = T, size = 2) +
+  geom_point(data = filter(st, type == "s1000_glass"),
+             aes(x = rfu, y = std_ntu, fill = "1000 NTU (glass)"), pch = 8,
+             size = 2, stroke = 2, color = "#1e3579") +
+  geom_point(data = filter(st, type == "s1000_plastic"),
+             aes(x = rfu, y = std_ntu, fill = "1000 NTU (plastic)"), pch = 8,
+             size = 2, stroke = 2, color = "#ff8709") +
+  # scale_color_manual(values = c("black")) +
+  labs(x = expression(RFU[AQUAFLUOR]),
+       y = expression(Turbidity[STD] ~ "(NTU)"),
+       color = NULL,
+       fill = NULL) +
+  theme_bw() +
+  theme(text = element_text(size = 32),
+        axis.text = element_text(colour = "black"),
+        legend.position = c(0.65, 0.1),
+        axis.title.y = element_blank()) 
+
+fig_turb <- f1 + f2
+  
+ggsave(here("figures", "scatter_cali_turb.png"), fig_turb,
+        width = 15, height = 8, dpi = 300)
+```
+```{r}
+test <- gp %>% 
+  pivot_longer(c(ntu_1:ntu_3), names_to = "rep", values_to = "ntu")
+```
+
+```{r}
+test %>% 
+  ggplot(aes(x = type, y = ntu, fill = type)) +
+  geom_boxplot(alpha = 0.7) +
+  facet_wrap(.~ measurment, scales = "free", nrow = 1) +
+  ggpubr::stat_compare_means(method = "t.test", 
+                             size = 8,
+                             label.y.npc = 0.02,
+                             label.x = 0.7) +
+    labs(y = expression("Turb"[AQUAFLUOR] ~ "(NTU)"),
+       x = NULL,
+       fill = NULL) +
+  ggsci::scale_fill_jama() +
+  theme_bw() +
+  theme(text = element_text(size = 32),
+        axis.text = element_text(colour = "black"),
+        legend.position = "none",
+        legend.direction = "horizontal")
+
+ggsave(here("figures", "box_glass_plastic.png"),
+        width = 25, height = 6, dpi = 300)
+```
+
