@@ -1,0 +1,13 @@
+﻿type,std_ntu,rfu
+cali_glass,0,0
+cali_glass,10,2.78
+cali_glass,100,32.62
+cali_plastic,0,1.06
+cali_plastic,10,4.63
+cali_plastic,100,35.14
+s10_glass,10,3.099785638
+s100_glass,100,32.76527331
+s1000_glass,1000,197.170418
+s10_plastic,10,3.523972603
+s100_plastic,100,34.01255708
+s1000_plastic,1000,198.4360731

@@ -1,14 +1,11 @@
-﻿Cal,NTU,RFU,,,,Notes,,,,,,,,,,,
-Blank,0,2.89,,,,"DI water, glass",,,,,,,,,,,
-1,10,5.67,,8.6458,,Glass,,,,,,,,0,2.89,0,0
-2,100,35.51,110.4361,101.4482,,Glass,,,,,,,,10,5.67,2.78,10
-,,,,,,"Slope = 3.11 , r2 = 0.99981 ",,,,,,,,100,35.51,32.62,100
-,,,,,,,,,,,,,,,,,
-,NTU-1,NTU-2,,NTU-3,sdev,,,,,,,,,,,,
-Std.1,9.805,9.449,,9.667,0.146554503,,,,,,,,,,,,
-Std.2,101.8,101.9,,102,0.081649658,,,,,,,,,,,,
-Std.3 (1000 NTU),614.3,612.8,,612.5,0.787400787,,,,,,,,,,,,
-Southgate Bridge,51.16,51.04,,51.11,0.049216077,,,,,,,,,,,,
-Elliot Creek,14.29,13.84,,13.04,0.516935414,,,,,,,,,,,,
-Southgate Downstream,40.13,41.07,,42.3,0.888531873,,,,,,,,,,,,
-ss,0,,,,,Below level of detection.,,,,,,,,,,,
+﻿type,measurment,ntu_1,ntu_2,ntu_3
+plastic,10 NTU,10.39,10.34,10.14
+plastic,100 NTU,99.43,99.31,99.21
+plastic,Southgate Bridge,44.81,44.5,44.38
+plastic,Elliot Creek,14.04,14.56,14.75
+plastic,Southgate Downstream,37.86,37.96,37.42
+glass,10 NTU,9.805,9.449,9.667
+glass,100 NTU,101.8,101.9,102
+glass,Southgate Bridge,51.16,51.04,51.11
+glass,Elliot Creek,14.29,13.84,13.04
+glass,Southgate Downstream,40.13,41.07,42.3

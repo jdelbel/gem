@@ -20,11 +20,13 @@ library(scales)
 #Upload chl dataset - entire QU39 dataset downloaded from the portal on 2022-10-12
 s <- read_csv(here("files", "aqua_standards.csv"))
 
-st <- read_csv(here("files", "aqua_standards_turb.csv"))
+st <- read_csv(here("files", "aqua_standards_turb4.csv"))
 
 fs <- read_csv(here("files", "field_surf_compare.csv"))
 
 fd <- read_csv(here("files", "Aquafluor_field_results_turb_2.csv"))
+
+fd2 <- read_csv(here("files", "prof_2024-08-21.csv"))
 
 c <- read_csv(here("files", "8_binAvg-1723757572399.csv"))
 
@@ -73,7 +75,7 @@ formula <- y~x-1
   geom_point(data = filter(s, type == "standard"),
              aes(x = rfu, y = sample, color = "Post-Cali Std."), pch = 8,
              size = 2, stroke = 2) +
-  scale_color_manual(values = c("black")) +
+  scale_color_manual(values = c("#ff8709")) +
   labs(x = expression(RFU[AQUAFLUOR]),
        y = expression(Chl[STD] ~ "(µg/L)"),
        color = NULL) +
@@ -298,6 +300,48 @@ ggsave(here("figures", "profiles.png"), fig,
 
 ```
 
+```{r}
+fd2_long <- fd2 %>%
+  filter(!is.na(gem_1)) %>% 
+  pivot_longer(c(gem_1:gem_4), names_to = "rep", values_to = "chl") %>% 
+  group_by(depth) %>% 
+  mutate(med_chl = median(chl, na.rm = T)) %>% 
+  ungroup()
+
+formula_2 <- y~x
+
+ggplot() +
+  geom_smooth(data = fd2_long, aes(x = flu, y = med_chl),
+              method = "lm", color = "black", fill = "black",
+              formula = y ~ x,
+              fullrange = TRUE, se = T, size = 1, alpha = 0.3) +
+  geom_boxplot(data = fd2_long, aes(x = flu, y = chl, group = depth,
+                                    color = as.factor(depth)), 
+               position = position_dodge(preserve = "single"), width = 0.1,
+               size = 0.8) +
+  geom_point(data = fd2_long, aes(x = flu, y = med_chl, fill = as.factor(depth)),
+              alpha = 0.2, size = 2, pch = 21) +
+  stat_poly_eq(data = fd2_long, aes(x = flu, y = med_chl,
+               label = paste(..eq.label.., ..rr.label.., sep = "~~")),
+               formula = formula_2, parse = TRUE, size = 8,
+               color = "black", label.y.npc = 0.99, label.x.npc = 0.95) +
+  geom_abline(slope = 1, linetype = "dashed") +
+  ggsci::scale_fill_aaas() +
+  ggsci::scale_color_aaas() +
+  lims(x = c(0, 6),
+       y = c(0, 6)) +
+  labs(x = expression("Chl"[CTD-SEAPOINT] ~ "(µg/L)"),
+       y = expression("Chl"[AQUAFLUOR] ~ "(µg/L)"),
+       fill = "Depth",
+       color = "Depth") +
+  theme_bw() +
+  theme(text = element_text(size = 32),
+        axis.text = element_text(colour = "black"),
+        legend.position = c(0.9, 0.22)) 
+ 
+ggsave(here("figures", "scatter_prof_2024-08-20.png"),
+        width = 8, height = 6, dpi = 300) 
+```
 
 
 
@@ -330,7 +374,7 @@ f1 <- ggplot() +
                label = paste(expression(Cali[PLASTIC]), "-", ..eq.label..,
                              ..rr.label.., sep = "~~")),
                formula = formula, parse = TRUE, size = 8, label.y.npc = 0.87,
-               color = "#ff8709")  +
+               color = "#ff8709") +
   geom_point(data = filter(st, type == "s10_glass"),
              aes(x = rfu, y = std_ntu, fill = "Post-Cali STD. (glass)"), pch = 8,
              size = 1, stroke = 1.5, color = "#1e3579") +
@@ -392,6 +436,7 @@ fig_turb <- f1 + f2
 ggsave(here("figures", "scatter_cali_turb.png"), fig_turb,
         width = 15, height = 8, dpi = 300)
 ```
+
 ```{r}
 test <- gp %>% 
   pivot_longer(c(ntu_1:ntu_3), names_to = "rep", values_to = "ntu")
