@@ -1,0 +1,73 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+Workbook used for analysis and creating figures for the GEM AquaFluor testing report for DFO.
+
+```{r}
+#Loading packages
+library(tidyverse)
+library(here)
+library(patchwork)
+library(readxl)
+library(ggpmisc)
+library(pals)
+library(scales)
+```
+
+```{r}
+#Uploading data
+
+#Field extracted chlorophyll concentrations and replicates done on the aquafluor
+cc <- read_csv(here("files", "calibration_type_field_comparison2.csv"))
+
+```
+
+```{r}
+#Making the datasheet long, averaging the aquafluor replicates and calculating the standard deviation and eliminating unused columns
+
+cc_long <- cc %>% 
+  pivot_longer(c(af_1:af_6), values_to = "chl_af", names_to = "rep") %>% 
+  drop_na() %>% 
+  group_by(date, standard, chl) %>%
+  summarize(avg_chl_af = mean(chl_af),
+            sd_chl_af = sd(chl_af)) %>% 
+  ungroup()
+  
+```
+
+```{r}
+formula <- y~x
+
+#Making plot showing the correlation between chlorophyll 
+cc_long %>% 
+  ggplot() +
+   geom_smooth(aes(x = chl, y = avg_chl_af, color = standard),
+               method = "lm",
+               formula = y ~ x,
+               fullrange = F, se = F, size = 1.2) +
+  geom_point(aes(x = chl, y = avg_chl_af, fill = standard),
+              size = 5, stroke = 1.5, pch = 21) +
+  stat_poly_eq(aes(x = chl, y = avg_chl_af, color = standard,
+               label = paste(..eq.label.., ..rr.label.., sep = "~~")),
+               formula = formula, parse = TRUE, size = 8,
+               label.x.npc = 0.9) +
+  geom_abline(slope = 1, linetype = "dashed") +
+  lims(x = c(0, 110),
+       y = c(0, 110)) +
+  ggsci::scale_fill_npg() +
+  ggsci::scale_color_npg() +
+  labs(x = expression("Chla"[TRILOGY] ~ "(µg/L)"),
+       y = expression("Chla"[AQUAFLUOR] ~ "(µg/L)"),
+       fill = "Calibration Standard",
+       color = "Calibration Standard") +
+  theme_bw() +
+  theme(text = element_text(size = 32),
+        axis.text = element_text(colour = "black"),
+        legend.position = c(0.7, 0.2))
+
+ggsave(here("figures", "scatter_comprison_extracted_test.png"),
+        width = 9, height = 7, dpi = 300)
+```
+
