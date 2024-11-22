@@ -25,8 +25,7 @@ cc <- read_csv(here("files", "calibration_type_field_comparison2.csv"))
 ```
 
 ```{r}
-#Making the datasheet long, averaging the aquafluor replicates and calculating the standard deviation and eliminating unused columns
-
+#Setting up a workbook to create scatterplots - Making the datasheet long, averaging the aquafluor replicates and calculating the standard deviation and eliminating unused columns
 cc_long <- cc %>% 
   pivot_longer(c(af_1:af_6), values_to = "chl_af", names_to = "rep") %>% 
   drop_na() %>% 
@@ -38,9 +37,10 @@ cc_long <- cc %>%
 ```
 
 ```{r}
+#Setting the formula for linear correlations between variables
 formula <- y~x
 
-#Making plot showing the correlation between chlorophyll 
+#Making plot showing the correlation between extracted chlorophyll done on the Hakai Trilogy benchtop fluorometer and in-vivo chlorophyll derived from the handheld GEM fluorometer. Two of these correlations are shown: 1) Aquafluor calibrated with analystical Chla standards and; 2) Aquafluor calibrated with rhodamine standards.
 cc_long %>% 
   ggplot() +
    geom_smooth(aes(x = chl, y = avg_chl_af, color = standard),
