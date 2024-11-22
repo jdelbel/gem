@@ -71,3 +71,36 @@ ggsave(here("figures", "scatter_comprison_extracted_test.png"),
         width = 9, height = 7, dpi = 300)
 ```
 
+```{r}
+#Making plot showing the correlation between extracted chlorophyll done on the Hakai Trilogy benchtop fluorometer and in-vivo chlorophyll derived from the handheld GEM fluorometer. Two of these correlations are shown: 1) Aquafluor calibrated with analystical Chla standards and; 2) Aquafluor calibrated with rhodamine standards.
+cc_long %>% 
+  ggplot() +
+   geom_smooth(aes(x = log10(chl), y = log10(avg_chl_af), color = standard),
+               method = "lm",
+               formula = y ~ x,
+               fullrange = F, se = F, size = 1.2) +
+  geom_point(aes(x = log10(chl), y = log10(avg_chl_af), fill = standard),
+              size = 5, stroke = 1.5, pch = 21) +
+  stat_poly_eq(aes(x = log10(chl), y = log10(avg_chl_af), color = standard,
+               label = paste(..eq.label.., ..rr.label.., sep = "~~")),
+               formula = formula, parse = TRUE, size = 8,
+               label.x.npc = 0.9) +
+  geom_abline(slope = 1, linetype = "dashed") +
+  # lims(x = c(0, 110),
+  #      y = c(0, 110)) +
+  ggsci::scale_fill_npg() +
+  ggsci::scale_color_npg() +
+  labs(x = expression("Chla"[TRILOGY] ~ "(µg/L)"),
+       y = expression("Chla"[AQUAFLUOR] ~ "(µg/L)"),
+       fill = "Calibration Standard",
+       color = "Calibration Standard") +
+  theme_bw() +
+  theme(text = element_text(size = 32),
+        axis.text = element_text(colour = "black"),
+        legend.position = c(0.7, 0.2))
+
+ggsave(here("figures", "scatter_comprison_extracted_log.png"),
+        width = 9, height = 7, dpi = 300)
+```
+
+
